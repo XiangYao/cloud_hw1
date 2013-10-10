@@ -1,7 +1,10 @@
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.TimeZone;
 
 import com.amazonaws.AmazonServiceException;
@@ -14,9 +17,14 @@ import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.Address;
 import com.amazonaws.services.ec2.model.AllocateAddressResult;
 import com.amazonaws.services.ec2.model.AssociateAddressRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.DisassociateAddressRequest;
+import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.ReleaseAddressRequest;
+import com.amazonaws.services.ec2.model.Reservation;
 
 
 public class Elastic_IP_CloudWatch {
@@ -35,7 +43,7 @@ public class Elastic_IP_CloudWatch {
  		
  		
 		// we assume that we've already created an instance. Use the id of the instance.
-		String instanceId = ""; //put your own instance id to test this code.
+		String instanceId = "i-278afe40"; //put your own instance id to test this code.
 		
 		try{
  			
@@ -43,10 +51,38 @@ public class Elastic_IP_CloudWatch {
 			*  	#2 Allocate elastic IP addresses.
 			*********************************************/
 			
+			
+			DescribeInstancesResult describeInstancesRequest = ec2.describeInstances();
+            List<Reservation> reservations = describeInstancesRequest.getReservations();
+            Set<Instance> allInstances = new HashSet<Instance>();
+          
+            for (Reservation reservation : reservations) {
+            	allInstances.addAll(reservation.getInstances());
+            }
+            
+            for(Instance ins : allInstances) {
+            	if (!ins.getState().getName().equals("terminated")) {
+                	System.out.println("Name: " + ins.getInstanceId());
+                	System.out.println("DNS: " + ins.getPublicDnsName());
+                	System.out.println("IP: " + ins.getPublicIpAddress());
+                	System.out.println("KeyPair:" + ins.getKeyName());
+                	System.out.println("State: " + ins.getState());
+            	}
+            }
+            
+            // release
+            List<Address> add_list = ec2.describeAddresses().getAddresses();
+            ReleaseAddressRequest rq;
+            for (Address a : add_list) {
+            	rq = new ReleaseAddressRequest(a.getPublicIp());
+            	ec2.releaseAddress(rq);
+            }
+            
 			//allocate
 			AllocateAddressResult elasticResult = ec2.allocateAddress();
+            System.out.println(ec2.describeAddresses());
 			String elasticIp = elasticResult.getPublicIp();
-			System.out.println("New elastic IP: "+elasticIp);
+			System.out.println("New elastic IP: " + elasticIp);
 				
 			//associate
 			AssociateAddressRequest aar = new AssociateAddressRequest();

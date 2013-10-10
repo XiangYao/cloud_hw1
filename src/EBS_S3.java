@@ -23,16 +23,22 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.List;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
+import com.amazonaws.services.ec2.model.Address;
 import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.CreateVolumeResult;
+import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
+import com.amazonaws.services.ec2.model.DescribeAvailabilityZonesResult;
 import com.amazonaws.services.ec2.model.DetachVolumeRequest;
+import com.amazonaws.services.ec2.model.ReleaseAddressRequest;
+import com.amazonaws.services.ec2.model.Volume;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -64,24 +70,41 @@ public class EBS_S3 {
 
          
          // We assume that we've already created an instance. Use the id of the instance.
-         String instanceId = ""; //put your own instance id to test this code.
+         String instanceId = "i-278afe40"; //put your own instance id to test this code.
          
          try{
        
         	/*********************************************
             *  #2.1 Create a volume
             *********************************************/
+         	// release
+             System.out.println(ec2.describeVolumes());
+             List<Volume> v_list = ec2.describeVolumes().getVolumes();
+             System.out.println("Volume size: " + v_list.size());
+             DeleteVolumeRequest rq;
+             for (Volume v : v_list) {
+             	if (v.getVolumeId().compareTo("vol-343dd879") != 0) {
+ 	            	rq = new DeleteVolumeRequest(v.getVolumeId());
+ 	            	ec2.deleteVolume(rq);
+             	}
+             }
+             System.out.println(ec2.describeVolumes());
+             System.out.println("Volume size: " + v_list.size());
+        	 
          	//create a volume
+        	System.out.println("2.1 Create a volume");
         	CreateVolumeRequest cvr = new CreateVolumeRequest();
-	        cvr.setAvailabilityZone("us-east-1a");
+	        cvr.setAvailabilityZone("us-east-1b");
 	        cvr.setSize(10); //size = 10 gigabytes
         	CreateVolumeResult volumeResult = ec2.createVolume(cvr);
         	String createdVolumeId = volumeResult.getVolume().getVolumeId();
-         	
+        	System.out.println("Created Volume ID: " + createdVolumeId);
         	
         	/*********************************************
             *  #2.2 Attach the volume to the instance
             *********************************************/
+        	System.out.println("2.2 Attach the volume to the instance");
+        	Thread.sleep(30000);
         	AttachVolumeRequest avr = new AttachVolumeRequest();
         	avr.setVolumeId(createdVolumeId);
         	avr.setInstanceId(instanceId);
@@ -91,6 +114,7 @@ public class EBS_S3 {
         	/*********************************************
             *  #2.3 Detach the volume from the instance
             *********************************************/
+        	System.out.println("2.3 Detach the volume from the instance");
         	DetachVolumeRequest dvr = new DetachVolumeRequest();
         	dvr.setVolumeId(createdVolumeId);
         	dvr.setInstanceId(instanceId);
@@ -100,10 +124,11 @@ public class EBS_S3 {
             /************************************************
             *    #3 S3 bucket and object
             ***************************************************/
+        	System.out.println("3 S3 bucket and object");
             s3  = new AmazonS3Client(credentials);
             
             //create bucket
-            String bucketName = "cloud-sample-bucket";
+            String bucketName = "cloud-xiangyao-bucket";
             s3.createBucket(bucketName);
             
             //set key
@@ -133,6 +158,7 @@ public class EBS_S3 {
             /*********************************************
              *  #4 shutdown client object
              *********************************************/
+            System.out.println("4 shutdown client object");
             ec2.shutdown();
             s3.shutdown();
 

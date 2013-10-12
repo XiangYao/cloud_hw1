@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -43,7 +42,7 @@ public class Elastic_IP_CloudWatch {
  		
  		
 		// we assume that we've already created an instance. Use the id of the instance.
-		String instanceId = "i-278afe40"; //put your own instance id to test this code.
+		String instanceId = "i-faed289c"; //put your own instance id to test this code.
 		
 		try{
  			
@@ -123,7 +122,7 @@ public class Elastic_IP_CloudWatch {
 			GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
 			calendar.add(GregorianCalendar.SECOND, -1 * calendar.get(GregorianCalendar.SECOND)); // 1 second ago
 			Date endTime = calendar.getTime();
-			calendar.add(GregorianCalendar.MINUTE, -10); // 10 minutes ago
+			calendar.add(GregorianCalendar.MINUTE, -30); // 10 minutes ago
 			Date startTime = calendar.getTime();
 			statRequest.setStartTime(startTime);
 			statRequest.setEndTime(endTime);
